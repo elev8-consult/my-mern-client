@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from '../api/axios'
 
 export default function BookingList() {
   const [bookings, setBookings] = useState([])
   useEffect(() => {
-    axios.get('http://localhost:4000/api/bookings')
+    api.get('/api/bookings')
       .then(r => setBookings(r.data))
   }, [])
 

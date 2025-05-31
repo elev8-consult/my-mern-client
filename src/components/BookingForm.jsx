@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import axios from 'axios'
+import api from '../api/axios'
 
 export default function BookingForm({ onAdd }) {
   const [date, setDate] = useState(new Date())
@@ -10,13 +10,13 @@ export default function BookingForm({ onAdd }) {
   const [instructor, setInstructor] = useState('')
 
   useEffect(() => {
-    axios.get('http://localhost:4000/api/instructors')
+    api.get('/api/instructors')
       .then(r => setInstructors(r.data))
   }, [])
 
   const submit = e => {
     e.preventDefault()
-    axios.post('http://localhost:4000/api/bookings', { date, time, instructor })
+    api.post('/api/bookings', { date, time, instructor })
       .then(r => onAdd(r.data))
   }
 
