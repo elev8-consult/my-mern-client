@@ -16,29 +16,78 @@ export default function AdminPage() {
   const [duration, setDuration] = useState(60)
   const [refresh, setRefresh] = useState(0)
 
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
   useEffect(() => {
+    setLoading(true)
+    setError(null)
     // Fetch both instructors and events
     Promise.all([
       api.get('/api/instructors'),
       api.get('/api/events')
-    ]).then(([instructorsRes, eventsRes]) => {
-      setInstructors(instructorsRes.data);
-      setEvents(eventsRes.data);
-    });
+    ])
+    .then(([instructorsRes, eventsRes]) => {
+      setInstructors(Array.isArray(instructorsRes.data) ? instructorsRes.data : [])
+      setEvents(Array.isArray(eventsRes.data) ? eventsRes.data : [])
+    })
+    .catch(err => {
+      console.error('Error fetching data:', err)
+      setError('Failed to load data')
+      setInstructors([])
+      setEvents([])
+    })
+    .finally(() => setLoading(false))
   }, [refresh])
 
+  const [submitError, setSubmitError] = useState(null)
+  
   const addInstructor = async e => {
     e.preventDefault()
-    await api.post('/api/instructors', { name })
-    setName(''); setRefresh(r => r + 1)
+    setSubmitError(null)
+    try {
+      await api.post('/api/instructors', { name })
+      setName('')
+      setRefresh(r => r + 1)
+    } catch (err) {
+      console.error('Error adding instructor:', err)
+      setSubmitError('Failed to add instructor. Please try again.')
+    }
   }
 
   const addEvent = async e => {
     e.preventDefault()
-    await api.post('/api/events', {
-      date, time, duration, instructor: selInstructor, maxSeats, title
-    })
-    setTitle(''); setTime('09:00'); setMaxSeats(10); setRefresh(r => r + 1)
+    setSubmitError(null)
+    try {
+      await api.post('/api/events', {
+        date, time, duration, instructor: selInstructor, maxSeats, title
+      })
+      setTitle('')
+      setTime('09:00')
+      setMaxSeats(10)
+      setRefresh(r => r + 1)
+    } catch (err) {
+      console.error('Error adding event:', err)
+      setSubmitError('Failed to create class. Please try again.')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 max-w-md mx-auto">
+        <h1 className="text-2xl mb-4">Admin</h1>
+        <p>Loading...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 max-w-md mx-auto">
+        <h1 className="text-2xl mb-4">Admin</h1>
+        <p className="text-red-600">{error}</p>
+      </div>
+    )
   }
 
   return (
@@ -47,41 +96,53 @@ export default function AdminPage() {
 
       <form onSubmit={addInstructor} className="space-y-2">
         <h2 className="font-semibold">Add Instructor</h2>
+        {submitError && (
+          <p className="text-red-600 text-sm">{submitError}</p>
+        )}
         <input
           value={name} onChange={e => setName(e.target.value)}
           placeholder="Name" required
           className="w-full p-2 border rounded"
         />
-        <button className="px-4 py-2 bg-green-600 text-white rounded">Save</button>
+        <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+          Save
+        </button>
       </form>
 
       <div className="mb-8">
         <h2 className="font-semibold mb-4">Existing Classes</h2>
         <div className="space-y-2">
-          {events.map(event => (
-            <div key={event._id} className="p-4 border rounded flex justify-between items-center">
-              <div>
-                <p>{new Date(event.date).toLocaleDateString()} @ {event.time}</p>
-                <p className="text-sm text-gray-600">
-                  {event.instructor.name} - {event.booked}/{event.maxSeats} booked
-                </p>
-                <p className="text-sm text-gray-600">
-                  Duration: {event.duration} minutes
-                </p>
+          {events.length === 0 ? (
+            <p className="text-gray-500">No classes found.</p>
+          ) : (
+            events.map(event => (
+              <div key={event._id} className="p-4 border rounded flex justify-between items-center">
+                <div>
+                  <p>{event.date ? new Date(event.date).toLocaleDateString() : 'N/A'} @ {event.time || 'N/A'}</p>
+                  <p className="text-sm text-gray-600">
+                    {event.instructor?.name || 'N/A'} - {event.booked || 0}/{event.maxSeats || 'N/A'} booked
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Duration: {event.duration || 'N/A'} minutes
+                  </p>
+                </div>
+                <Link 
+                  to={`/aura-admin/class/${event._id}`}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  View Details
+                </Link>
               </div>
-              <Link 
-                to={`/aura-admin/class/${event._id}`}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                View Details
-              </Link>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
       <form onSubmit={addEvent} className="space-y-2">
         <h2 className="font-semibold">Add Class</h2>
+        {submitError && (
+          <p className="text-red-600 text-sm">{submitError}</p>
+        )}
 
         <label>Title</label>
         <input
@@ -99,9 +160,13 @@ export default function AdminPage() {
           onChange={e => setSelInstructor(e.target.value)}
           required className="w-full p-2 border rounded"
         >
-          <option value="">—</option>
-          {instructors.map(i =>
-            <option key={i._id} value={i._id}>{i.name}</option>
+          <option value="">Select an instructor</option>
+          {!instructors.length ? (
+            <option disabled>No instructors available</option>
+          ) : (
+            instructors.map(i =>
+              <option key={i._id} value={i._id}>{i.name || 'Unnamed Instructor'}</option>
+            )
           )}
         </select>
 
@@ -138,7 +203,11 @@ export default function AdminPage() {
           min="1" className="w-full p-2 border rounded"
         />
 
-        <button className="px-4 py-2 bg-blue-600 text-white rounded">Create Class</button>
+        <button 
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+          Create Class
+        </button>
       </form>
     </div>
   )
