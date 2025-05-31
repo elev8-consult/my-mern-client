@@ -1,8 +1,22 @@
-# Getting Started with Create React App
+# Class Booking System - Client
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is the frontend application for the Class Booking System. It's built with React and provides a user-friendly interface for booking classes and managing bookings.
 
-## Available Scripts
+## Features
+
+- View available classes and their details
+- Book classes with instructor selection
+- View booking history
+- Admin dashboard for managing bookings and classes
+- Responsive design with Tailwind CSS
+
+## Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+- Backend server running (see [my-mern-server](https://github.com/elev8-consult/my-mern-server))
+
+## Setup Instructions
 
 In the project directory, you can run:
 
