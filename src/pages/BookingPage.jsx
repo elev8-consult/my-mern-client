@@ -10,9 +10,27 @@ export default function BookingPage() {
   const [countryCode, setCountryCode] = useState('+1');
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    api.get('/api/events').then(r => setEvents(r.data));
+    setLoading(true);
+    setError(null);
+    api.get('/api/events')
+      .then(response => {
+        if (Array.isArray(response.data)) {
+          setEvents(response.data);
+        } else {
+          console.error('Expected array of events but got:', response.data);
+          setEvents([]);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching events:', err);
+        setError('Failed to load available classes');
+        setEvents([]);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const openModal = ev => {
@@ -33,16 +51,19 @@ export default function BookingPage() {
     setPhone(formattedPhone);
   };
 
+  const [bookingError, setBookingError] = useState(null);
+
   const confirm = async () => {
     if (!name.trim()) {
-      alert('Please enter your name');
+      setBookingError('Please enter your name');
       return;
     }
     if (phone.length < 6) {
-      alert('Please enter a valid phone number');
+      setBookingError('Please enter a valid phone number');
       return;
     }
 
+    setBookingError(null);
     setIsSubmitting(true);
     try {
       await api.post('/api/bookings', {
@@ -70,30 +91,56 @@ export default function BookingPage() {
       
       setModal({ open: false, event: null });
     } catch (err) {
-      alert(err.response?.data || err.message);
+      console.error('Error making booking:', err);
+      setBookingError(err.response?.data?.message || err.message || 'Failed to make booking. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <h1 className="text-2xl mb-4">Book a Class</h1>
+        <div className="text-center py-8">
+          <p>Loading available classes...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <h1 className="text-2xl mb-4">Book a Class</h1>
+        <div className="text-red-600 py-8">
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 max-w-2xl mx-auto">
       <h1 className="text-2xl mb-4">Book a Class</h1>
       <div className="space-y-4">
-        {events.map(e => {
+        {events.length === 0 ? (
+          <p className="text-center py-8 text-gray-500">No classes available at the moment.</p>
+        ) : (
+          events.map(e => {
           const seatsLeft = e.maxSeats - e.booked;
           return (
             <div key={e._id} className="p-4 bg-white rounded shadow flex justify-between items-start">
               <div>
-                <h3 className="font-semibold text-lg mb-1">{e.title}</h3>
-                <p>{new Date(e.date).toLocaleDateString()} @ {e.time}</p>
-                <p className="text-sm text-gray-600">with {e.instructor.name}</p>
-                <p className="text-sm text-gray-600">Duration: {e.duration} minutes</p>
+                <h3 className="font-semibold text-lg mb-1">{e.title || 'Untitled Class'}</h3>
+                <p>{e.date ? new Date(e.date).toLocaleDateString() : 'N/A'} @ {e.time || 'N/A'}</p>
+                <p className="text-sm text-gray-600">with {e.instructor?.name || 'N/A'}</p>
+                <p className="text-sm text-gray-600">Duration: {e.duration || 'N/A'} minutes</p>
               </div>
               {seatsLeft > 0
                 ? <button
                     onClick={() => openModal(e)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                   >
                     Book ({seatsLeft} left)
                   </button>
@@ -101,27 +148,32 @@ export default function BookingPage() {
               }
             </div>
           )
-        })}
+        }))}
       </div>
 
       {modal.open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <div className="bg-white p-6 rounded shadow max-w-sm w-full">
             <h2 className="text-xl mb-4">Enter your details</h2>
+            {bookingError && (
+              <div className="mb-4 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+                {bookingError}
+              </div>
+            )}
             <input
               type="text"
               placeholder="Full Name"
               value={name}
-              onChange={e => setName(e.target.value)}
-              className={`w-full mb-3 p-2 border rounded ${
-                name.trim() === '' ? 'border-red-500' : ''
+              onChange={e => {setName(e.target.value); setBookingError(null);}}
+              className={`w-full mb-3 p-2 border rounded transition-colors ${
+                name.trim() === '' ? 'border-red-500' : 'focus:border-blue-500'
               }`}
             />
             <div className="flex mb-4">
               <select
                 value={countryCode}
-                onChange={e => setCountryCode(e.target.value)}
-                className="p-2 border rounded-l w-24"
+                onChange={e => {setCountryCode(e.target.value); setBookingError(null);}}
+                className="p-2 border rounded-l w-24 focus:border-blue-500 transition-colors"
               >
                 <option value="+961">+961 (Lebanon)</option>
                 <option value="+1">+1 (USA/Canada)</option>
@@ -189,12 +241,12 @@ export default function BookingPage() {
                 type="tel"
                 placeholder="Phone Number (numbers only)"
                 value={phone}
-                onChange={handlePhoneChange}
+                onChange={e => {handlePhoneChange(e); setBookingError(null);}}
                 pattern="[0-9]*"
                 minLength="6"
                 maxLength="15"
-                className={`flex-1 p-2 border rounded-r ${
-                  phone && phone.length < 6 ? 'border-red-500' : ''
+                className={`flex-1 p-2 border rounded-r transition-colors ${
+                  phone && phone.length < 6 ? 'border-red-500' : 'focus:border-blue-500'
                 }`}
               />
             </div>
@@ -206,18 +258,27 @@ export default function BookingPage() {
             <button
               onClick={confirm}
               disabled={isSubmitting || !name.trim() || phone.length < 6}
-              className={`w-full p-2 rounded text-white ${
+              className={`w-full p-2 rounded text-white transition-colors ${
                 isSubmitting ? 'bg-gray-400 cursor-not-allowed' :
                 name.trim() && phone.length >= 6 
-                  ? 'bg-green-600 hover:bg-green-700' 
+                  ? 'bg-green-600 hover:bg-green-700 transition-colors' 
                   : 'bg-gray-400 cursor-not-allowed'
               }`}
             >
-              {isSubmitting ? 'Processing...' : 'Confirm Reservation'}
+              {isSubmitting ? (
+                <span className="flex items-center justify-center">
+                  Processing<span className="animate-pulse">...</span>
+                </span>
+              ) : (
+                'Confirm Reservation'
+              )}
             </button>
             <button
-              onClick={() => setModal({ open: false, event: null })}
-              className="mt-2 w-full p-2 border rounded hover:bg-gray-100"
+              onClick={() => {
+                setModal({ open: false, event: null });
+                setBookingError(null);
+              }}
+              className="mt-2 w-full p-2 border rounded hover:bg-gray-100 transition-colors"
             >
               Cancel
             </button>
