@@ -6,7 +6,7 @@ const baseURL = process.env.NODE_ENV === 'production'
 
 const api = axios.create({
     baseURL,
-    withCredentials: true,
+    withCredentials: false, // Changed to match server CORS configuration
     headers: {
         'Content-Type': 'application/json'
     }
