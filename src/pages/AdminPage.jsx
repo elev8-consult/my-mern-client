@@ -4,6 +4,14 @@ import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import api from '../api/axios'
 
+// Copy instructor link to clipboard
+const copyToClipboard = (id) => {
+  const link = `${window.location.origin}/instructor/${id}`
+  navigator.clipboard.writeText(link)
+    .then(() => alert('Link copied to clipboard!'))
+    .catch(err => console.error('Failed to copy:', err))
+}
+
 export default function AdminPage() {
   const [name, setName] = useState('')
   const [instructors, setInstructors] = useState([])
@@ -94,20 +102,45 @@ export default function AdminPage() {
     <div className="p-4 max-w-md mx-auto space-y-8">
       <h1 className="text-2xl">Admin</h1>
 
-      <form onSubmit={addInstructor} className="space-y-2">
-        <h2 className="font-semibold">Add Instructor</h2>
-        {submitError && (
-          <p className="text-red-600 text-sm">{submitError}</p>
-        )}
-        <input
-          value={name} onChange={e => setName(e.target.value)}
-          placeholder="Name" required
-          className="w-full p-2 border rounded"
-        />
-        <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
-          Save
-        </button>
-      </form>
+      <div className="space-y-4">
+        <h2 className="font-semibold">Instructors</h2>
+        <div className="space-y-2">
+          {instructors.map(instructor => (
+            <div key={instructor._id} className="p-3 border rounded flex justify-between items-center">
+              <span>{instructor.name}</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => copyToClipboard(instructor._id)}
+                  className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
+                >
+                  Copy Link
+                </button>
+                <Link
+                  to={`/instructor/${instructor._id}`}
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                >
+                  View Dashboard
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <form onSubmit={addInstructor} className="space-y-2 mt-4 pt-4 border-t">
+          <h3 className="font-semibold">Add New Instructor</h3>
+          {submitError && (
+            <p className="text-red-600 text-sm">{submitError}</p>
+          )}
+          <input
+            value={name} onChange={e => setName(e.target.value)}
+            placeholder="Name" required
+            className="w-full p-2 border rounded"
+          />
+          <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+            Save
+          </button>
+        </form>
+      </div>
 
       <div className="mb-8">
         <h2 className="font-semibold mb-4">Existing Classes</h2>

@@ -36,7 +36,7 @@ export default function BookingPage() {
   const openModal = ev => {
     setModal({ open: true, event: ev });
     setName('');
-    setCountryCode('+1');
+    setCountryCode('+961'); // Default to Lebanon
     setPhone('');
   };
 
