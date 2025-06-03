@@ -53,13 +53,20 @@ export default function AdminPage() {
   const addInstructor = async e => {
     e.preventDefault()
     setSubmitError(null)
+    
+    if (!name.trim()) {
+      setSubmitError('Please enter a valid name')
+      return
+    }
+
     try {
       await api.post('/api/instructors', { name })
       setName('')
       setRefresh(r => r + 1)
     } catch (err) {
       console.error('Error adding instructor:', err)
-      setSubmitError('Failed to add instructor. Please try again.')
+      const errorMessage = err.response?.data?.message || 'Failed to add instructor. Please try again.'
+      setSubmitError(errorMessage)
     }
   }
 
