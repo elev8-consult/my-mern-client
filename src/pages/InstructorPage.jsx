@@ -29,6 +29,17 @@ export default function InstructorPage() {
     .finally(() => setLoading(false));
   }, [instructorId]);
 
+  // Delete class
+  const deleteClass = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this class?')) return;
+    try {
+      await api.delete(`/api/events/${id}`);
+      setClasses(classes => classes.filter(c => c._id !== id));
+    } catch (err) {
+      alert('Failed to delete class.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 max-w-4xl mx-auto">
@@ -82,7 +93,6 @@ export default function InstructorPage() {
                     <p className="font-medium">
                       Attendance: {classItem.booked}/{classItem.maxSeats} students
                     </p>
-                    
                     {/* Attendance progress bar */}
                     <div className="mt-2 mb-4">
                       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -94,7 +104,6 @@ export default function InstructorPage() {
                         />
                       </div>
                     </div>
-
                     {/* Attendee List */}
                     {classItem.attendees && classItem.attendees.length > 0 && (
                       <div className="mt-4">
@@ -111,6 +120,12 @@ export default function InstructorPage() {
                         </div>
                       </div>
                     )}
+                    <button
+                      onClick={() => deleteClass(classItem._id)}
+                      className="mt-4 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                    >
+                      Delete Class
+                    </button>
                   </div>
                 </div>
               ))}
