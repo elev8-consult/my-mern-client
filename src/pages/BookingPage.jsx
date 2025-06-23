@@ -134,53 +134,53 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      <div className="flex flex-col items-center mb-6">
-        <img src={logo} alt="Logo" style={{ maxWidth: 180, margin: '0 auto', display: 'block' }} />
+    <div className="p-2 sm:p-4 max-w-full sm:max-w-2xl mx-auto" style={{ background: '#EFE7DA', minHeight: '100vh' }}>
+      <div className="flex flex-col items-center mb-4 sm:mb-6">
+        <img src={logo} alt="Logo" style={{ maxWidth: 140, width: '60vw', margin: '0 auto', display: 'block' }} />
       </div>
-      <h1 className="text-2xl mb-4 text-center">Book a Class</h1>
+      <h1 className="text-xl sm:text-2xl mb-3 sm:mb-4 text-center text-[#3B2F2F]">Book a Class</h1>
       {uniqueDates.length > 0 && (
-        <div className="flex overflow-x-auto gap-2 mb-6 justify-center">
+        <div className="flex overflow-x-auto gap-2 mb-4 sm:mb-6 justify-center scrollbar-hide">
           {uniqueDates.map(date => (
             <button
               key={date}
               onClick={() => setSelectedDate(date)}
-              className={`px-4 py-2 rounded-full border transition-colors whitespace-nowrap ${selectedDate === date ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-100'}`}
+              className={`px-3 sm:px-4 py-2 rounded-full border transition-colors whitespace-nowrap text-xs sm:text-base ${selectedDate === date ? 'bg-[#3B2F2F] text-[#EFE7DA]' : 'bg-white text-[#3B2F2F] border-[#D6C7B0] hover:bg-[#F5EBDD]'}`}
             >
               {new Date(date).toLocaleDateString()}
             </button>
           ))}
           <button
             onClick={() => setSelectedDate('')}
-            className={`px-4 py-2 rounded-full border transition-colors whitespace-nowrap ${selectedDate === '' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-100'}`}
+            className={`px-3 sm:px-4 py-2 rounded-full border transition-colors whitespace-nowrap text-xs sm:text-base ${selectedDate === '' ? 'bg-[#3B2F2F] text-[#EFE7DA]' : 'bg-white text-[#3B2F2F] border-[#D6C7B0] hover:bg-[#F5EBDD]'}`}
           >
             All Dates
           </button>
         </div>
       )}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {filteredEvents.length === 0 ? (
-          <p className="text-center py-8 text-gray-500">No classes available for this day.</p>
+          <p className="text-center py-8 text-[#A89B8C] text-sm sm:text-base">No classes available for this day.</p>
         ) : (
-          <div className="flex overflow-x-auto gap-4 pb-2">
+          <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-2 scrollbar-hide">
             {filteredEvents.map(e => {
               const seatsLeft = e.maxSeats - e.booked;
               return (
-                <div key={e._id} className="min-w-[320px] p-4 bg-white rounded shadow flex flex-col justify-between items-start">
+                <div key={e._id} className="min-w-[85vw] max-w-xs sm:min-w-[320px] p-3 sm:p-4 bg-white rounded shadow flex flex-col justify-between items-start border border-[#E2D3C0]">
                   <div>
-                    <h3 className="font-semibold text-lg mb-1">{e.title || 'Untitled Class'}</h3>
-                    <p>{e.date ? new Date(e.date).toLocaleDateString() : 'N/A'} @ {e.time || 'N/A'}</p>
-                    <p className="text-sm text-gray-600">with {e.instructor?.name || 'N/A'}</p>
-                    <p className="text-sm text-gray-600">Duration: {e.duration || 'N/A'} minutes</p>
+                    <h3 className="font-semibold text-base sm:text-lg mb-1 text-[#3B2F2F]">{e.title || 'Untitled Class'}</h3>
+                    <p className="text-[#7C6F5F] text-xs sm:text-base">{e.date ? new Date(e.date).toLocaleDateString() : 'N/A'} @ {e.time || 'N/A'}</p>
+                    <p className="text-xs sm:text-sm text-[#A89B8C]">with {e.instructor?.name || 'N/A'}</p>
+                    <p className="text-xs sm:text-sm text-[#A89B8C]">Duration: {e.duration || 'N/A'} minutes</p>
                   </div>
                   {seatsLeft > 0
                     ? <button
                         onClick={() => openModal(e)}
-                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 rounded bg-[#3B2F2F] text-[#EFE7DA] hover:bg-[#5A4636] transition-colors text-xs sm:text-base"
                       >
                         Book ({seatsLeft} left)
                       </button>
-                    : <span className="mt-4 px-4 py-2 bg-gray-400 text-white rounded">Full</span>
+                    : <span className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 rounded bg-[#A89B8C] text-white text-xs sm:text-base">Full</span>
                   }
                 </div>
               )
@@ -188,13 +188,12 @@ export default function BookingPage() {
           </div>
         )}
       </div>
-
       {modal.open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded shadow max-w-sm w-full">
-            <h2 className="text-xl mb-4">Enter your details</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-2 sm:px-0">
+          <div className="bg-white p-4 sm:p-6 rounded shadow max-w-xs sm:max-w-sm w-full border border-[#E2D3C0]">
+            <h2 className="text-lg sm:text-xl mb-3 sm:mb-4 text-[#3B2F2F]">Enter your details</h2>
             {bookingError && (
-              <div className="mb-4 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+              <div className="mb-3 sm:mb-4 p-2 bg-[#F5EBDD] border border-[#E2D3C0] rounded text-[#A94442] text-xs sm:text-sm">
                 {bookingError}
               </div>
             )}
@@ -203,15 +202,15 @@ export default function BookingPage() {
               placeholder="Full Name"
               value={name}
               onChange={e => {setName(e.target.value); setBookingError(null);}}
-              className={`w-full mb-3 p-2 border rounded transition-colors ${
-                name.trim() === '' ? 'border-red-500' : 'focus:border-blue-500'
+              className={`w-full mb-2 sm:mb-3 p-2 border rounded transition-colors bg-[#F5EBDD] text-[#3B2F2F] text-xs sm:text-base ${
+                name.trim() === '' ? 'border-[#A94442]' : 'focus:border-[#3B2F2F]'
               }`}
             />
-            <div className="flex mb-4">
+            <div className="flex mb-3 sm:mb-4">
               <select
                 value={countryCode}
                 onChange={e => {setCountryCode(e.target.value); setBookingError(null);}}
-                className="p-2 border rounded-l w-24 focus:border-blue-500 transition-colors"
+                className="p-2 border rounded-l w-20 sm:w-24 focus:border-[#3B2F2F] transition-colors bg-[#F5EBDD] text-[#3B2F2F] text-xs sm:text-base"
               >
                 <option value="+961">+961 (Lebanon)</option>
                 <option value="+1">+1 (USA/Canada)</option>
@@ -283,24 +282,24 @@ export default function BookingPage() {
                 pattern="[0-9]*"
                 minLength="6"
                 maxLength="15"
-                className={`flex-1 p-2 border rounded-r transition-colors ${
-                  phone && phone.length < 6 ? 'border-red-500' : 'focus:border-blue-500'
+                className={`flex-1 p-2 border rounded-r transition-colors bg-[#F5EBDD] text-[#3B2F2F] text-xs sm:text-base ${
+                  phone && phone.length < 6 ? 'border-[#A94442]' : 'focus:border-[#3B2F2F]'
                 }`}
               />
             </div>
             {phone && phone.length < 6 && (
-              <div className="text-red-500 text-sm mb-4">
+              <div className="text-[#A94442] text-xs sm:text-sm mb-3 sm:mb-4">
                 Please enter at least 6 digits
               </div>
             )}
             <button
               onClick={confirm}
               disabled={isSubmitting || !name.trim() || phone.length < 6}
-              className={`w-full p-2 rounded text-white transition-colors ${
-                isSubmitting ? 'bg-gray-400 cursor-not-allowed' :
+              className={`w-full p-2 rounded transition-colors text-xs sm:text-base ${
+                isSubmitting ? 'bg-[#A89B8C] cursor-not-allowed text-white' :
                 name.trim() && phone.length >= 6 
-                  ? 'bg-green-600 hover:bg-green-700 transition-colors' 
-                  : 'bg-gray-400 cursor-not-allowed'
+                  ? 'bg-[#3B2F2F] text-[#EFE7DA] hover:bg-[#5A4636]' 
+                  : 'bg-[#A89B8C] cursor-not-allowed text-white'
               }`}
             >
               {isSubmitting ? (
@@ -316,7 +315,7 @@ export default function BookingPage() {
                 setModal({ open: false, event: null });
                 setBookingError(null);
               }}
-              className="mt-2 w-full p-2 border rounded hover:bg-gray-100 transition-colors"
+              className="mt-2 w-full p-2 border rounded hover:bg-[#F5EBDD] transition-colors text-[#3B2F2F] border-[#E2D3C0] text-xs sm:text-base"
             >
               Cancel
             </button>
