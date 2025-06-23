@@ -15,10 +15,10 @@ export default function BookingPage() {
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
 
-  // Helper to get unique dates from events
+  // Helper to get unique dates from events, sorted earliest to latest
   const getUniqueDates = (events) => {
     const dates = events.map(e => e.date && new Date(e.date).toISOString().split('T')[0]);
-    return Array.from(new Set(dates)).filter(Boolean).sort();
+    return Array.from(new Set(dates)).filter(Boolean).sort((a, b) => new Date(a) - new Date(b));
   };
 
   useEffect(() => {
