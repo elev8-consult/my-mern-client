@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import logo from '../src/logo.jpg';
 
 export default function BookingPage() {
   const navigate = useNavigate();
@@ -12,6 +13,13 @@ export default function BookingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedDate, setSelectedDate] = useState('');
+
+  // Helper to get unique dates from events
+  const getUniqueDates = (events) => {
+    const dates = events.map(e => e.date && new Date(e.date).toISOString().split('T')[0]);
+    return Array.from(new Set(dates)).filter(Boolean).sort();
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -21,12 +29,10 @@ export default function BookingPage() {
         if (Array.isArray(response.data)) {
           setEvents(response.data);
         } else {
-          console.error('Expected array of events but got:', response.data);
           setEvents([]);
         }
       })
-      .catch(err => {
-        console.error('Error fetching events:', err);
+      .catch(() => {
         setError('Failed to load available classes');
         setEvents([]);
       })
@@ -98,6 +104,13 @@ export default function BookingPage() {
     }
   };
 
+  // Filter events by selected date
+  const filteredEvents = selectedDate
+    ? events.filter(e => e.date && new Date(e.date).toISOString().split('T')[0] === selectedDate)
+    : events;
+
+  const uniqueDates = getUniqueDates(events);
+
   if (loading) {
     return (
       <div className="p-4 max-w-2xl mx-auto">
@@ -122,33 +135,58 @@ export default function BookingPage() {
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
-      <h1 className="text-2xl mb-4">Book a Class</h1>
+      <div className="flex flex-col items-center mb-6">
+        <img src={logo} alt="Logo" style={{ maxWidth: 180, margin: '0 auto', display: 'block' }} />
+      </div>
+      <h1 className="text-2xl mb-4 text-center">Book a Class</h1>
+      {uniqueDates.length > 0 && (
+        <div className="flex overflow-x-auto gap-2 mb-6 justify-center">
+          {uniqueDates.map(date => (
+            <button
+              key={date}
+              onClick={() => setSelectedDate(date)}
+              className={`px-4 py-2 rounded-full border transition-colors whitespace-nowrap ${selectedDate === date ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-100'}`}
+            >
+              {new Date(date).toLocaleDateString()}
+            </button>
+          ))}
+          <button
+            onClick={() => setSelectedDate('')}
+            className={`px-4 py-2 rounded-full border transition-colors whitespace-nowrap ${selectedDate === '' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-100'}`}
+          >
+            All Dates
+          </button>
+        </div>
+      )}
       <div className="space-y-4">
-        {events.length === 0 ? (
-          <p className="text-center py-8 text-gray-500">No classes available at the moment.</p>
+        {filteredEvents.length === 0 ? (
+          <p className="text-center py-8 text-gray-500">No classes available for this day.</p>
         ) : (
-          events.map(e => {
-          const seatsLeft = e.maxSeats - e.booked;
-          return (
-            <div key={e._id} className="p-4 bg-white rounded shadow flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold text-lg mb-1">{e.title || 'Untitled Class'}</h3>
-                <p>{e.date ? new Date(e.date).toLocaleDateString() : 'N/A'} @ {e.time || 'N/A'}</p>
-                <p className="text-sm text-gray-600">with {e.instructor?.name || 'N/A'}</p>
-                <p className="text-sm text-gray-600">Duration: {e.duration || 'N/A'} minutes</p>
-              </div>
-              {seatsLeft > 0
-                ? <button
-                    onClick={() => openModal(e)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                  >
-                    Book ({seatsLeft} left)
-                  </button>
-                : <span className="px-4 py-2 bg-gray-400 text-white rounded">Full</span>
-              }
-            </div>
-          )
-        }))}
+          <div className="flex overflow-x-auto gap-4 pb-2">
+            {filteredEvents.map(e => {
+              const seatsLeft = e.maxSeats - e.booked;
+              return (
+                <div key={e._id} className="min-w-[320px] p-4 bg-white rounded shadow flex flex-col justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">{e.title || 'Untitled Class'}</h3>
+                    <p>{e.date ? new Date(e.date).toLocaleDateString() : 'N/A'} @ {e.time || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">with {e.instructor?.name || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">Duration: {e.duration || 'N/A'} minutes</p>
+                  </div>
+                  {seatsLeft > 0
+                    ? <button
+                        onClick={() => openModal(e)}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Book ({seatsLeft} left)
+                      </button>
+                    : <span className="mt-4 px-4 py-2 bg-gray-400 text-white rounded">Full</span>
+                  }
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {modal.open && (
