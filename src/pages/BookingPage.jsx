@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import logo from '../src/logo.jpg';
+import logo from '../logo.jpg';
 
 export default function BookingPage() {
   const navigate = useNavigate();
