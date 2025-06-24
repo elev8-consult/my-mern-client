@@ -59,6 +59,15 @@ export default function BookingPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Set the earliest date as the default selected date
+  useEffect(() => {
+    const uniqueDates = getUniqueDates(events);
+    if (uniqueDates.length > 0 && !selectedDate) {
+      setSelectedDate(uniqueDates[0]);
+    }
+    // eslint-disable-next-line
+  }, [events]);
+
   const openModal = ev => {
     setModal({ open: true, event: ev });
     setName('');
@@ -175,12 +184,6 @@ export default function BookingPage() {
               </button>
             );
           })}
-          <button
-            onClick={() => setSelectedDate('')}
-            className={`px-3 sm:px-4 py-2 rounded-full border transition-colors whitespace-nowrap text-xs sm:text-base ${selectedDate === '' ? 'bg-[#3B2F2F] text-[#EFE7DA]' : 'bg-white text-[#3B2F2F] border-[#D6C7B0] hover:bg-[#F5EBDD]'}`}
-          >
-            All Dates
-          </button>
         </div>
       )}
       <div className="space-y-3 sm:space-y-4">
