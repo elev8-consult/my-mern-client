@@ -15,10 +15,26 @@ export default function BookingPage() {
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
 
-  // Helper to get unique dates from events, sorted earliest to latest
+  // Helper to get unique dates from events, sorted by weekday (Mon-Sun), then by earliest time
   const getUniqueDates = (events) => {
-    const dates = events.map(e => e.date && new Date(e.date).toISOString().split('T')[0]);
-    return Array.from(new Set(dates)).filter(Boolean).sort((a, b) => new Date(a) - new Date(b));
+    const datesWithTimes = events
+      .filter(e => e.date)
+      .map(e => {
+        const dateObj = new Date(e.date);
+        const dateStr = dateObj.toISOString().split('T')[0];
+        return { dateStr, weekday: dateObj.getDay(), time: e.time || '00:00' };
+      });
+    // Group by dateStr, keep earliest time for each date
+    const dateMap = {};
+    datesWithTimes.forEach(({ dateStr, weekday, time }) => {
+      if (!dateMap[dateStr] || time < dateMap[dateStr].time) {
+        dateMap[dateStr] = { dateStr, weekday, time };
+      }
+    });
+    // Sort by weekday (0=Sun, 1=Mon, ...), then by time
+    return Object.values(dateMap)
+      .sort((a, b) => a.weekday - b.weekday || a.time.localeCompare(b.time))
+      .map(d => d.dateStr);
   };
 
   useEffect(() => {
@@ -141,15 +157,20 @@ export default function BookingPage() {
       <h1 className="text-xl sm:text-2xl mb-3 sm:mb-4 text-center text-[#3B2F2F]">Book a Class</h1>
       {uniqueDates.length > 0 && (
         <div className="flex overflow-x-auto gap-2 mb-4 sm:mb-6 justify-center scrollbar-hide">
-          {uniqueDates.map(date => (
-            <button
-              key={date}
-              onClick={() => setSelectedDate(date)}
-              className={`px-3 sm:px-4 py-2 rounded-full border transition-colors whitespace-nowrap text-xs sm:text-base ${selectedDate === date ? 'bg-[#3B2F2F] text-[#EFE7DA]' : 'bg-white text-[#3B2F2F] border-[#D6C7B0] hover:bg-[#F5EBDD]'}`}
-            >
-              {new Date(date).toLocaleDateString()}
-            </button>
-          ))}
+          {uniqueDates.map(date => {
+            const d = new Date(date);
+            const dayName = d.toLocaleDateString(undefined, { weekday: 'short' });
+            return (
+              <button
+                key={date}
+                onClick={() => setSelectedDate(date)}
+                className={`px-3 sm:px-4 py-2 rounded-full border transition-colors whitespace-nowrap text-xs sm:text-base ${selectedDate === date ? 'bg-[#3B2F2F] text-[#EFE7DA]' : 'bg-white text-[#3B2F2F] border-[#D6C7B0] hover:bg-[#F5EBDD]'}`}
+              >
+                <span className="block font-semibold">{dayName}</span>
+                <span className="block">{d.toLocaleDateString()}</span>
+              </button>
+            );
+          })}
           <button
             onClick={() => setSelectedDate('')}
             className={`px-3 sm:px-4 py-2 rounded-full border transition-colors whitespace-nowrap text-xs sm:text-base ${selectedDate === '' ? 'bg-[#3B2F2F] text-[#EFE7DA]' : 'bg-white text-[#3B2F2F] border-[#D6C7B0] hover:bg-[#F5EBDD]'}`}
