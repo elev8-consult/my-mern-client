@@ -15,26 +15,30 @@ export default function BookingPage() {
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
 
-  // Helper to get unique dates from events, sorted by weekday (Mon-Sun), then by earliest time
+  // Helper to get unique dates from events, sorted by date (earliest to latest), then by earliest time
   const getUniqueDates = (events) => {
-    const datesWithTimes = events
-      .filter(e => e.date)
-      .map(e => {
-        const dateObj = new Date(e.date);
-        const dateStr = dateObj.toISOString().split('T')[0];
-        return { dateStr, weekday: dateObj.getDay(), time: e.time || '00:00' };
-      });
-    // Group by dateStr, keep earliest time for each date
+    // Group all events by date string
     const dateMap = {};
-    datesWithTimes.forEach(({ dateStr, weekday, time }) => {
-      if (!dateMap[dateStr] || time < dateMap[dateStr].time) {
-        dateMap[dateStr] = { dateStr, weekday, time };
-      }
+    events.forEach(e => {
+      if (!e.date) return;
+      const dateObj = new Date(e.date);
+      const dateStr = dateObj.toISOString().split('T')[0];
+      if (!dateMap[dateStr]) dateMap[dateStr] = [];
+      dateMap[dateStr].push(e.time || '00:00');
     });
-    // Sort by weekday (0=Sun, 1=Mon, ...), then by time
-    return Object.values(dateMap)
-      .sort((a, b) => a.weekday - b.weekday || a.time.localeCompare(b.time))
-      .map(d => d.dateStr);
+    // For each date, keep the earliest time for sorting
+    const dateArr = Object.entries(dateMap).map(([dateStr, times]) => {
+      const minTime = times.sort()[0];
+      return { dateStr, minTime };
+    });
+    // Sort by date (earliest to latest), then by earliest time
+    dateArr.sort((a, b) => {
+      const dateA = new Date(a.dateStr);
+      const dateB = new Date(b.dateStr);
+      if (dateA - dateB !== 0) return dateA - dateB;
+      return a.minTime.localeCompare(b.minTime);
+    });
+    return dateArr.map(d => d.dateStr);
   };
 
   useEffect(() => {
