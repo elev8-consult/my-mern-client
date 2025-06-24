@@ -188,28 +188,36 @@ export default function BookingPage() {
           <p className="text-center py-8 text-[#A89B8C] text-sm sm:text-base">No classes available for this day.</p>
         ) : (
           <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-2 scrollbar-hide">
-            {filteredEvents.map(e => {
-              const seatsLeft = e.maxSeats - e.booked;
-              return (
-                <div key={e._id} className="min-w-[85vw] max-w-xs sm:min-w-[320px] p-3 sm:p-4 bg-white rounded shadow flex flex-col justify-between items-start border border-[#E2D3C0]">
-                  <div>
-                    <h3 className="font-semibold text-base sm:text-lg mb-1 text-[#3B2F2F]">{e.title || 'Untitled Class'}</h3>
-                    <p className="text-[#7C6F5F] text-xs sm:text-base">{e.date ? new Date(e.date).toLocaleDateString() : 'N/A'} @ {e.time || 'N/A'}</p>
-                    <p className="text-xs sm:text-sm text-[#A89B8C]">with {e.instructor?.name || 'N/A'}</p>
-                    <p className="text-xs sm:text-sm text-[#A89B8C]">Duration: {e.duration || 'N/A'} minutes</p>
+            {filteredEvents
+              .slice() // copy array
+              .sort((a, b) => {
+                // Sort by time (earliest to latest)
+                const tA = (a.time || '00:00').padStart(5, '0');
+                const tB = (b.time || '00:00').padStart(5, '0');
+                return tA.localeCompare(tB);
+              })
+              .map(e => {
+                const seatsLeft = e.maxSeats - e.booked;
+                return (
+                  <div key={e._id} className="min-w-[85vw] max-w-xs sm:min-w-[320px] p-3 sm:p-4 bg-white rounded shadow flex flex-col justify-between items-start border border-[#E2D3C0]">
+                    <div>
+                      <h3 className="font-semibold text-base sm:text-lg mb-1 text-[#3B2F2F]">{e.title || 'Untitled Class'}</h3>
+                      <p className="text-[#7C6F5F] text-xs sm:text-base">{e.date ? new Date(e.date).toLocaleDateString() : 'N/A'} @ {e.time || 'N/A'}</p>
+                      <p className="text-xs sm:text-sm text-[#A89B8C]">with {e.instructor?.name || 'N/A'}</p>
+                      <p className="text-xs sm:text-sm text-[#A89B8C]">Duration: {e.duration || 'N/A'} minutes</p>
+                    </div>
+                    {seatsLeft > 0
+                      ? <button
+                          onClick={() => openModal(e)}
+                          className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 rounded bg-[#3B2F2F] text-[#EFE7DA] hover:bg-[#5A4636] transition-colors text-xs sm:text-base"
+                        >
+                          Book ({seatsLeft} left)
+                        </button>
+                      : <span className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 rounded bg-[#A89B8C] text-white text-xs sm:text-base">Full</span>
+                    }
                   </div>
-                  {seatsLeft > 0
-                    ? <button
-                        onClick={() => openModal(e)}
-                        className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 rounded bg-[#3B2F2F] text-[#EFE7DA] hover:bg-[#5A4636] transition-colors text-xs sm:text-base"
-                      >
-                        Book ({seatsLeft} left)
-                      </button>
-                    : <span className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 rounded bg-[#A89B8C] text-white text-xs sm:text-base">Full</span>
-                  }
-                </div>
-              )
-            })}
+                )
+              })}
           </div>
         )}
       </div>
