@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import logo from '../logo.jpg';
@@ -14,6 +14,9 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
+  const dateStripRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   // Helper to get unique dates from events, sorted by date (earliest to latest), then by earliest time
   const getUniqueDates = (events) => {
@@ -60,13 +63,61 @@ export default function BookingPage() {
   }, []);
 
   // Set the earliest date as the default selected date
+  const uniqueDates = useMemo(() => getUniqueDates(events), [events]);
+
   useEffect(() => {
-    const uniqueDates = getUniqueDates(events);
     if (uniqueDates.length > 0 && !selectedDate) {
       setSelectedDate(uniqueDates[0]);
     }
-    // eslint-disable-next-line
-  }, [events]);
+  }, [uniqueDates, selectedDate]);
+
+  const filteredEvents = useMemo(() => (
+    selectedDate
+      ? events.filter(e => e.date && new Date(e.date).toISOString().split('T')[0] === selectedDate)
+      : events
+  ), [events, selectedDate]);
+
+  const updateScrollControls = useCallback(() => {
+    const el = dateStripRef.current;
+    if (!el) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      return;
+    }
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 0);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    const el = dateStripRef.current;
+    if (!el) return;
+
+    updateScrollControls();
+
+    const handleScroll = () => updateScrollControls();
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', updateScrollControls);
+
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', updateScrollControls);
+    };
+  }, [uniqueDates, updateScrollControls]);
+
+  useEffect(() => {
+    if (!uniqueDates.length) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+    }
+  }, [uniqueDates.length]);
+
+  const scrollDates = direction => {
+    const el = dateStripRef.current;
+    if (!el) return;
+    const amount = direction * Math.min(el.clientWidth * 0.8, 320);
+    el.scrollBy({ left: amount, behavior: 'smooth' });
+  };
 
   const openModal = ev => {
     setModal({ open: true, event: ev });
@@ -133,13 +184,6 @@ export default function BookingPage() {
     }
   };
 
-  // Filter events by selected date
-  const filteredEvents = selectedDate
-    ? events.filter(e => e.date && new Date(e.date).toISOString().split('T')[0] === selectedDate)
-    : events;
-
-  const uniqueDates = getUniqueDates(events);
-
   if (loading) {
     return (
       <div className="p-4 max-w-2xl mx-auto">
@@ -169,28 +213,59 @@ export default function BookingPage() {
       </div>
       <h1 className="text-xl sm:text-2xl mb-3 sm:mb-4 text-center text-[#3B2F2F]">Book a Class</h1>
       {uniqueDates.length > 0 && (
-        <div className="flex overflow-x-auto gap-2 mb-4 sm:mb-6 justify-center scrollbar-hide">
-          {uniqueDates.map(date => {
-            const d = new Date(date);
-            const dayName = d.toLocaleDateString(undefined, { weekday: 'short' });
-            return (
-              <button
-                key={date}
-                onClick={() => setSelectedDate(date)}
-                className={`px-3 sm:px-4 py-2 rounded-full border transition-colors whitespace-nowrap text-xs sm:text-base ${selectedDate === date ? 'bg-[#3B2F2F] text-[#EFE7DA]' : 'bg-white text-[#3B2F2F] border-[#D6C7B0] hover:bg-[#F5EBDD]'}`}
-              >
-                <span className="block font-semibold">{dayName}</span>
-                <span className="block">{d.toLocaleDateString()}</span>
-              </button>
-            );
-          })}
+        <div className="relative mb-4 sm:mb-6">
+          <button
+            type="button"
+            onClick={() => scrollDates(-1)}
+            disabled={!canScrollLeft}
+            className={`hidden sm:flex items-center justify-center absolute left-0 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full border transition-colors ${
+              canScrollLeft ? 'bg-white text-[#3B2F2F] border-[#D6C7B0] hover:bg-[#F5EBDD]' : 'bg-[#EFE7DA] text-[#C0B7A6] border-transparent cursor-not-allowed'
+            }`}
+            aria-label="Scroll earlier dates"
+          >
+            {'<'}
+          </button>
+          <div
+            ref={dateStripRef}
+            className="flex overflow-x-auto gap-2 justify-start scrollbar-hide px-1 sm:px-12"
+            style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+          >
+            {uniqueDates.map(date => {
+              const d = new Date(date);
+              const dayName = d.toLocaleDateString(undefined, { weekday: 'short' });
+              const isSelected = selectedDate === date;
+              return (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  className={`px-3 sm:px-4 py-2 rounded-full border transition-colors whitespace-nowrap text-xs sm:text-base ${isSelected ? 'bg-[#3B2F2F] text-[#EFE7DA]' : 'bg-white text-[#3B2F2F] border-[#D6C7B0] hover:bg-[#F5EBDD]'}`}
+                  style={{ scrollSnapAlign: 'start' }}
+                  aria-current={isSelected ? 'date' : undefined}
+                >
+                  <span className="block font-semibold">{dayName}</span>
+                  <span className="block">{d.toLocaleDateString()}</span>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => scrollDates(1)}
+            disabled={!canScrollRight}
+            className={`hidden sm:flex items-center justify-center absolute right-0 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full border transition-colors ${
+              canScrollRight ? 'bg-white text-[#3B2F2F] border-[#D6C7B0] hover:bg-[#F5EBDD]' : 'bg-[#EFE7DA] text-[#C0B7A6] border-transparent cursor-not-allowed'
+            }`}
+            aria-label="Scroll later dates"
+          >
+            {'>'}
+          </button>
         </div>
       )}
       <div className="space-y-3 sm:space-y-4">
         {filteredEvents.length === 0 ? (
           <p className="text-center py-8 text-[#A89B8C] text-sm sm:text-base">No classes available for this day.</p>
         ) : (
-          <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-2 scrollbar-hide">
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-1 lg:grid-cols-2">
             {filteredEvents
               .slice() // copy array
               .sort((a, b) => {
@@ -202,8 +277,8 @@ export default function BookingPage() {
               .map(e => {
                 const seatsLeft = e.maxSeats - e.booked;
                 return (
-                  <div key={e._id} className="min-w-[85vw] max-w-xs sm:min-w-[320px] p-3 sm:p-4 bg-white rounded shadow flex flex-col justify-between items-start border border-[#E2D3C0]">
-                    <div>
+                  <div key={e._id} className="p-3 sm:p-4 bg-white rounded shadow flex flex-col justify-between items-start border border-[#E2D3C0] h-full">
+                    <div className="w-full">
                       <h3 className="font-semibold text-base sm:text-lg mb-1 text-[#3B2F2F]">{e.title || 'Untitled Class'}</h3>
                       <p className="text-[#7C6F5F] text-xs sm:text-base">{e.date ? new Date(e.date).toLocaleDateString() : 'N/A'} @ {e.time || 'N/A'}</p>
                       <p className="text-xs sm:text-sm text-[#A89B8C]">with {e.instructor?.name || 'N/A'}</p>
@@ -212,11 +287,11 @@ export default function BookingPage() {
                     {seatsLeft > 0
                       ? <button
                           onClick={() => openModal(e)}
-                          className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 rounded bg-[#3B2F2F] text-[#EFE7DA] hover:bg-[#5A4636] transition-colors text-xs sm:text-base"
+                          className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 rounded bg-[#3B2F2F] text-[#EFE7DA] hover:bg-[#5A4636] transition-colors text-xs sm:text-base w-full"
                         >
                           Book ({seatsLeft} left)
                         </button>
-                      : <span className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 rounded bg-[#A89B8C] text-white text-xs sm:text-base">Full</span>
+                      : <span className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 rounded bg-[#A89B8C] text-white text-xs sm:text-base w-full text-center">Full</span>
                     }
                   </div>
                 )

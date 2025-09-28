@@ -23,6 +23,7 @@ export default function AdminPage() {
   const [maxSeats, setMaxSeats] = useState(10)
   const [duration, setDuration] = useState(60)
   const [refresh, setRefresh] = useState(0)
+  const [repeatForMonth, setRepeatForMonth] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -75,11 +76,18 @@ export default function AdminPage() {
     setSubmitError(null)
     try {
       await api.post('/api/events', {
-        date, time, duration, instructor: selInstructor, maxSeats, title
+        date,
+        time,
+        duration,
+        instructor: selInstructor,
+        maxSeats,
+        title,
+        repeatForMonth
       })
       setTitle('')
       setTime('09:00')
       setMaxSeats(10)
+      setRepeatForMonth(false)
       setRefresh(r => r + 1)
     } catch (err) {
       console.error('Error adding event:', err)
@@ -278,6 +286,19 @@ export default function AdminPage() {
           onChange={e => setMaxSeats(+e.target.value)}
           min="1" className="w-full p-2 border rounded"
         />
+
+        <div className="flex items-start gap-2">
+          <input
+            id="repeatForMonth"
+            type="checkbox"
+            checked={repeatForMonth}
+            onChange={e => setRepeatForMonth(e.target.checked)}
+            className="mt-1"
+          />
+          <label htmlFor="repeatForMonth" className="text-sm">
+            Repeat this class every week for the remainder of the selected month.
+          </label>
+        </div>
 
         <button 
           type="submit"
